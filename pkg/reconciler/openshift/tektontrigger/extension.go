@@ -22,6 +22,7 @@ import (
 	mf "github.com/manifestival/manifestival"
 	"github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"github.com/tektoncd/operator/pkg/reconciler/common"
+	occommon "github.com/tektoncd/operator/pkg/reconciler/openshift/common"
 )
 
 // NoPlatform "generates" a NilExtension
@@ -35,6 +36,7 @@ func (oe openshiftExtension) Transformers(comp v1alpha1.TektonComponent) []mf.Tr
 	triggerImages := common.ToLowerCaseKeys(common.ImagesFromEnv(common.TriggersImagePrefix))
 	return []mf.Transformer{
 		common.DeploymentImages(triggerImages),
+		occommon.ApplyCABundles,
 	}
 }
 func (oe openshiftExtension) PreReconcile(context.Context, v1alpha1.TektonComponent) error {
