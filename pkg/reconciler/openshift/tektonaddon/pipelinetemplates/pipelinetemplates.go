@@ -18,6 +18,7 @@ package tektonaddon
 
 import (
 	"path"
+	"runtime"
 
 	mf "github.com/manifestival/manifestival"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -50,13 +51,13 @@ const (
 var (
 	Runtimes = map[string]RuntimeSpec{
 		"s2i-dotnet": {Runtime: "dotnet", Version: "$(params.VERSION)", Default: "3.1-ubi8"},
-		"s2i-go":     {Runtime: "golang", Version: "$(params.VERSION)", Default: "1.13.4-ubi8"},
+		"s2i-go":     {Runtime: "golang", Version: "$(params.VERSION)", Default: "1.14.7-ubi8"},
 		"s2i-java":   {Runtime: "java", Version: "$(params.VERSION)", Default: "openjdk-11-ubi8"},
-		"s2i-nodejs": {Runtime: "nodejs", Version: "$(params.VERSION)", Default: "12-ubi8"},
-		"s2i-perl":   {Runtime: "perl", Version: "$(params.VERSION)", Default: "5.30-el7"},
-		"s2i-php":    {Runtime: "php", Version: "$(params.VERSION)", Default: "7.3-ubi8"},
+		"s2i-nodejs": {Runtime: "nodejs", Version: "$(params.VERSION)", Default: "14-ubi8"},
+		"s2i-perl":   {Runtime: "perl", Version: "$(params.VERSION)", Default: "5.30-ubi8"},
+		"s2i-php":    {Runtime: "php", Version: "$(params.VERSION)", Default: "7.4-ubi8"},
 		"s2i-python": {Runtime: "python", Version: "$(params.VERSION)", Default: "3.8-ubi8"},
-		"s2i-ruby":   {Runtime: "ruby", Version: "$(params.VERSION)", Default: "2.7-ubi7"},
+		"s2i-ruby":   {Runtime: "ruby", Version: "$(params.VERSION)", Default: "2.7-ubi8"},
 		"buildah":    {},
 	}
 )
@@ -73,29 +74,20 @@ func GeneratePipelineTemplates(templatePath string, manifest *mf.Manifest) error
 	workspacedTaskGenerators := []taskGenerator{
 		&pipeline{environment: "openshift", nameSuffix: "", generateDeployTask: openshiftDeployTask},
 		&pipeline{environment: "kubernetes", nameSuffix: "-deployment", generateDeployTask: kubernetesDeployTask},
-		&pipeline{environment: "knative", nameSuffix: "-knative", generateDeployTask: knativeDeployTask},
 	}
+
+	if runtime.GOARCH == "amd64" {
+		workspacedTaskGenerators = append(workspacedTaskGenerators,
+			&pipeline{environment: "knative", nameSuffix: "-knative", generateDeployTask: knativeDeployTask},
+		)
+	}
+
 	wps, err := generateBasePipeline(workspacedTemplate, workspacedTaskGenerators, !usingPipelineResource)
 	if err != nil {
 		return err
 	}
 	pipelines = append(pipelines, wps...)
 
-	resourcedTemplate, err := mf.NewManifest(path.Join(templatePath, "pipeline_using_resource.yaml"))
-	if err != nil {
-		return err
-	}
-
-	resourcedTaskGenerators := []taskGenerator{
-		&pipeline{environment: "openshift", nameSuffix: "", generateDeployTask: openshiftDeployTask},
-		&pipeline{environment: "kubernetes", nameSuffix: "-deployment", generateDeployTask: kubernetesDeployTask},
-		&pipeline{environment: "knative", nameSuffix: "-knative", generateDeployTask: knativeResourcedDeployTask},
-	}
-	rps, err := generateBasePipeline(resourcedTemplate, resourcedTaskGenerators, usingPipelineResource)
-	if err != nil {
-		return err
-	}
-	pipelines = append(pipelines, rps...)
 	generatedPipelines, err := mf.ManifestFrom(mf.Slice(pipelines), mf.UseClient(manifest.Client))
 	if err != nil {
 		return err
@@ -158,19 +150,6 @@ func knativeDeployTask(deployTask map[string]interface{}) map[string]interface{}
 	return deployTask
 }
 
-func knativeResourcedDeployTask(deployTask map[string]interface{}) map[string]interface{} {
-	deployTask["name"] = "kn-service-create"
-	deployTask["taskRef"] = map[string]interface{}{"name": "kn", "kind": "ClusterTask"}
-	deployTask["runAfter"] = []interface{}{"build"}
-	deployTask["resources"] = map[string]interface{}{
-		"inputs": []interface{}{map[string]interface{}{"name": "image", "resource": "app-image", "from": []interface{}{"build"}}},
-	}
-	deployTask["params"] = []interface{}{
-		map[string]interface{}{"name": "ARGS", "value": []interface{}{"service", "create", "$(params.APP_NAME)", "--image=$(resources.inputs.image.url)", "--force"}},
-	}
-	return deployTask
-}
-
 func generateBasePipeline(template mf.Manifest, taskGenerators []taskGenerator, usingPipelineResource bool) ([]unstructured.Unstructured, error) {
 	var pipelines []unstructured.Unstructured
 
@@ -203,10 +182,6 @@ func generateBasePipeline(template mf.Manifest, taskGenerators []taskGenerator, 
 
 		taskName := name
 		var index = 1
-		if usingPipelineResource {
-			index = 0
-			taskName += "-pr"
-		}
 
 		taskBuild := tasks.([]interface{})[index].(map[string]interface{})
 		taskBuild["taskRef"] = map[string]interface{}{"name": taskName, "kind": "ClusterTask"}
