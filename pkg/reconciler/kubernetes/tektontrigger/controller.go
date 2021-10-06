@@ -76,6 +76,12 @@ func NewExtendedController(generator common.ExtensionGenerator) injection.Contro
 			} else {
 				logger.Fatalw("Error while reading ConfigMap", zap.Error(err))
 			}
+			logger.Fatalw("failed to read release version from manifest", err)
+		}
+
+		metrics, err := NewRecorder()
+		if err != nil {
+			logger.Errorf("Failed to create trigger metrics recorder %v", err)
 		}
 
 		c := &Reconciler{

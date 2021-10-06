@@ -61,3 +61,5 @@ spec:
             configMapKeyRef:
               name: tekton-config-defaults
               key: DEFAULT_TARGET_NAMESPACE
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: tekton-config-observability

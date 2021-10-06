@@ -68,8 +68,8 @@ endif
 
 .PHONY: clean-bin
 clean-bin:
-	-rm -rf $(BIN)
-	-rm -rf bin
+#	-rm -rf $(BIN)
+#	-rm -rf bin
 	-rm -rf test/tests.* test/coverage.*
 
 .PHONY: clean

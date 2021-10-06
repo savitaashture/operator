@@ -18,6 +18,7 @@ package tektonpipeline
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -76,7 +77,25 @@ func NewExtendedController(generator common.ExtensionGenerator) injection.Contro
 			} else {
 				logger.Fatalw("Error while reading ConfigMap", zap.Error(err))
 			}
+			logger.Fatalw("failed to read release version from manifest", err)
 		}
+
+		fmt.Println("****************************************************************************************")
+		fmt.Println("****************************************************************************************")
+		fmt.Println("****************************************************************************************")
+		fmt.Println("****************************************************************************************")
+		fmt.Println("****************************************************************************************")
+
+		metrics, err := NewRecorder()
+		if err != nil {
+			logger.Errorf("Failed to create pipeline metrics recorder %v", err)
+		}
+
+		fmt.Println("****************************************************************************************")
+		fmt.Println("****************************************************************************************")
+		fmt.Println("****************************metrics ", metrics)
+		fmt.Println("****************************************************************************************")
+		fmt.Println("****************************************************************************************")
 
 		c := &Reconciler{
 			operatorClientSet: operatorclient.Get(ctx),

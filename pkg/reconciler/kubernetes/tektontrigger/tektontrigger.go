@@ -140,7 +140,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, tt *v1alpha1.TektonTrigg
 	// Check if an tekton installer set already exists, if not then create
 	existingInstallerSet := tt.Status.GetTektonInstallerSet()
 	if existingInstallerSet == "" {
-		return r.createInstallerSet(ctx, tt)
+		if err := r.createInstallerSet(ctx, tt); err != nil {
+			return err
+		}
+
+		// If there was no existing installer set, that means its a new install
+		r.metrics.logMetrics(metricsNew, logger)
+		return nil
 	}
 
 	// If exists, then fetch the TektonInstallerSet
@@ -183,6 +189,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, tt *v1alpha1.TektonTrigg
 		if !apierrors.IsNotFound(err) {
 			logger.Error("failed to get InstallerSet: %s", err)
 			return err
+		}
+
+		// If release version is not as expected, that means it would be an upgrade
+		if installerSetReleaseVersion != r.releaseVersion {
+			r.metrics.logMetrics(metricsUpgrade, logger)
 		}
 
 		return nil
