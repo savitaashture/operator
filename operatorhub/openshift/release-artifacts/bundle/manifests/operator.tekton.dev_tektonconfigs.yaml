@@ -3,8 +3,8 @@ kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
   labels:
-    operator.tekton.dev/release: devel
-    version: devel
+    operator.tekton.dev/release: v1.6.0
+    version: v1.6.0
   name: tektonconfigs.operator.tekton.dev
 spec:
   group: operator.tekton.dev

@@ -241,7 +241,7 @@ spec:
     ### Components
 
 
-    - Tekton Pipelines: v0.28.1
+    - Tekton Pipelines: v0.28.0
 
     - Tekton Triggers: v0.16.0
 
@@ -259,6 +259,7 @@ spec:
     Tekton Pipelines cli project provides a CLI (tkn) for interacting with OpenShift
     Pipelines.
 
+    - [Download tkn for Linux](https://mirror.openshift.com/pub/openshift-v4/clients/pipeline/0.17.2/tkn-linux-amd64-0.17.2.tar.gz)
 
     [Download tkn](/command-line-tools) (links will be available on `command line
     tools` page after this operator is installed).
